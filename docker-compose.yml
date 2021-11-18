@@ -1,0 +1,105 @@
+version: '3.7'
+services:
+  api-nginx:
+    container_name: metro-nginx
+    build:
+      context: ./.docker
+      dockerfile: nginx.docker
+    depends_on:
+      - api-php-fpm
+    volumes:
+      - ./:/var/www
+    ports:
+      - "6777:80"
+    networks:
+      - www
+
+  api-nginx2:
+    container_name: metro-nginx2
+    build:
+      context: ./.docker
+      dockerfile: nginx.docker
+    depends_on:
+      - api-php-fpm2
+    volumes:
+      - ./:/var/www
+    ports:
+      - "6778:80"
+    networks:
+        - www
+
+  api-php-fpm:
+    container_name: metro-php
+    build:
+      context: ./.docker
+      dockerfile: php-fpm.docker
+    volumes:
+      - ./:/var/www
+      - ./public:/var/www/public
+      - ./storage:/var/www/storage
+      - ./node_modules:/var/www/node_modules
+#      - ./vendor:/var/www/vendor
+    working_dir: /var/www
+    links:
+      - mysql
+    tty: true
+    ports:
+      - "323:22"
+    networks:
+        - www
+    expose:
+      - "9000"
+      - "9001"
+      - "6001"
+  api-php-fpm2:
+    container_name: metro-php2
+    build:
+      context: ./.docker
+      dockerfile: php-fpm.docker
+    volumes:
+      - ./:/var/www
+    working_dir: /var/www
+    links:
+      - mysql
+    tty: true
+    ports:
+      - "324:22"
+    networks:
+        - www
+  mysql:
+    build:
+      context: ./.docker
+      dockerfile: mysql.docker
+    container_name: metro-db-main
+    cap_add:
+      - SYS_NICE  # CAP_SYS_NICE
+    volumes:
+      - ./database/dumps:/var/www
+      - ./database/docker-initial:/docker-entrypoint-initdb.d
+    working_dir: /var/www
+    environment:
+      - "MYSQL_ROOT_PASSWORD=root"
+      - "MYSQL_USER=db_main"
+      - "MYSQL_PASSWORD=db_main"
+      - "MYSQL_DATABASE=db_main"
+    networks:
+      - www
+    ports:
+      - "3204:3306"
+
+  app-composer:
+    container_name: metro-composer
+    working_dir: /var/www
+    image: composer:latest
+    volumes:
+      - ./:/var/www
+#    command: >
+#      bash -c
+#      "composer cc && composer install --ignore-platform-reqs --no-cache"
+    networks:
+      - www
+
+networks:
+  www:
+volumes:
+  node_modules:

@@ -1,0 +1,77 @@
+FROM php:7.4-fpm
+
+RUN apt-get update -y \
+    && apt-get upgrade -y \
+  && apt-get install -y \
+     apt-utils \
+     nano \
+     wget \
+     zip \
+     git \
+     man \
+     curl \
+     pkg-config \
+     icu-devtools \
+     libicu-dev \
+     libcurl4 \
+     libcurl4-gnutls-dev \
+     libfreetype6-dev \
+     libjpeg62-turbo-dev \
+     libpng-dev \
+     libbz2-dev \
+     libssl-dev \
+     libgmp-dev \
+     libtidy-dev \
+     libxml2-dev \
+     libxslt1-dev \
+     libzip-dev \
+     libonig-dev \
+  &&  ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h
+
+RUN docker-php-ext-install mysqli \
+    && docker-php-ext-install pdo_mysql \
+    && docker-php-ext-install intl \
+    && docker-php-ext-install zip \
+    && docker-php-ext-install bz2 \
+    && docker-php-ext-install calendar \
+    && docker-php-ext-install bcmath \
+    && docker-php-ext-install exif \
+    && docker-php-ext-install gettext \
+    && docker-php-ext-install gmp \
+    && docker-php-ext-install mbstring \
+    && docker-php-ext-install pcntl \
+    && docker-php-ext-install shmop \
+    && docker-php-ext-install sockets \
+    && docker-php-ext-install sysvmsg \
+    && docker-php-ext-install sysvsem \
+    && docker-php-ext-install sysvshm \
+    && docker-php-ext-install tidy \
+    && docker-php-ext-install xsl \
+    && docker-php-ext-install soap \
+    && docker-php-source delete
+
+RUN pecl install xdebug-2.9.6 \
+    && docker-php-ext-enable xdebug \
+    && echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "display_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.remote_connect_back=0" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.remote_port=9000" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.profiler_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.profiler_output_dir=/tmp/snapshots" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.max_nesting_level=9999" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.profiler_enable_trigger=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+  && docker-php-ext-install -j$(nproc) gd \
+  && docker-php-source delete
+
+
+ADD ./php/default.ini /usr/local/etc/php/conf.d/default.ini
+RUN wget https://getcomposer.org/installer -O - -q | php -- --install-dir=/bin --filename=composer --quiet
+
+# PHPUnit
+RUN wget https://phar.phpunit.de/phpunit.phar -O /usr/local/bin/phpunit \
+    && chmod +x /usr/local/bin/phpunit
+
